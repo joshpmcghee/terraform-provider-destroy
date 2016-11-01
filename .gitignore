@@ -1,0 +1,3 @@
+# Ignore dist file
+terraform-provider-destroy
+*.tfstate*
