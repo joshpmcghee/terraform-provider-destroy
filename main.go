@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
+	"os"
 	"os/exec"
+	"time"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/plugin"
@@ -55,6 +58,11 @@ func providerResources() map[string]*schema.Resource {
 					Type:     schema.TypeString,
 					Required: true,
 				},
+				"fail_on_error": &schema.Schema{
+					Type:     schema.TypeBool,
+					Optional: true,
+					Default:  false,
+				},
 				"commands": &schema.Schema{
 					Type: schema.TypeList,
 					Elem: &schema.Schema{
@@ -90,15 +98,30 @@ func deleteFunc(d *schema.ResourceData, meta interface{}) error {
 	var cmd *exec.Cmd
 	var err error
 	commands := d.Get("commands")
+	name := d.Get("name")
+	shouldFail := d.Get("fail_on_error")
 
 	for _, command := range commands.([]interface{}) {
 		cmd = exec.Command("sh", "-c", command.(string))
 
 		err = cmd.Run()
+		// Deliberately will NOT fail unless specified.
 		if err != nil {
-			return err
+			out, _ := cmd.Output()
+			writeErr(fmt.Sprintf("Timestamp: %v\nHook: %v\nCommand:\n%v\nError: %v\nOutput: %v\n", time.Now(), name.(string), command.(string), err, out))
+			if shouldFail.(bool) {
+				return err
+			}
 		}
 	}
 
 	return nil
+}
+
+// Errors are ignored because we don't really care and definitely do not want it to fail.
+func writeErr(log string) {
+	errLog, _ := os.OpenFile("destroy_hook_error.log", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0664)
+	defer errLog.Close()
+
+	_, _ = errLog.WriteString(log)
 }
