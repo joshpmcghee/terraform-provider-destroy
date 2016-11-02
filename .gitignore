@@ -1,3 +1,4 @@
 # Ignore dist file
 terraform-provider-destroy
+destroy_hook_error.log
 *.tfstate*
