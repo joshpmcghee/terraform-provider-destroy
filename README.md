@@ -29,3 +29,5 @@ make install
 # Do this if you don't currently have a .terraformrc. If you do, add the provider entry manually.
 cp terraformrc ~/.terraformrc
 ```
+
+Credit to [ContainerSolutions](https://github.com/ContainerSolutions) whose [template](https://github.com/ContainerSolutions/terraform-provider-template) I based this provider on.
