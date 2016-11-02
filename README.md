@@ -2,7 +2,7 @@
 
 A simple Terraform provider to add the ability to insert custom behaviour "on destroy" like clean-up and tear-down tasks.
 
-Failed hooks, by default, will **not** fail the destroy. In the majority of use-cases, this is not the desired behaviour. If you wish to fail the destroy on an error in your hooks then you may set `fail_on_error = true`.
+Failed hooks, by default, will **not** fail the destroy. In the majority of use-cases, this is not the desired behaviour. If you wish to fail the destroy on an error in your hooks then you may set `fail_on_error = true`. All errors will be logged to `destroy_provider_errors.log` in your working directory.
 
 Here is an example making use of all implemented functionality:
 ```
