@@ -63,6 +63,16 @@ func providerResources() map[string]*schema.Resource {
 					Optional: true,
 					Default:  false,
 				},
+				"retries": &schema.Schema{
+					Type:     schema.TypeInt,
+					Optional: true,
+					Default:  3,
+				},
+				"retry_period": &schema.Schema{
+					Type:     schema.TypeInt,
+					Optional: true,
+					Default:  60,
+				},
 				"commands": &schema.Schema{
 					Type: schema.TypeList,
 					Elem: &schema.Schema{
@@ -100,18 +110,27 @@ func deleteFunc(d *schema.ResourceData, meta interface{}) error {
 	commands := d.Get("commands")
 	name := d.Get("name")
 	shouldFail := d.Get("fail_on_error")
+	retries := d.Get("retries")
+	period := d.Get("retry_period")
 
 	for _, command := range commands.([]interface{}) {
-		cmd = exec.Command("sh", "-c", command.(string))
+		attempt := 1
 
-		err = cmd.Run()
-		// Deliberately will NOT fail unless specified.
-		if err != nil {
-			out, _ := cmd.Output()
-			writeErr(fmt.Sprintf("Timestamp: %v\nHook: %v\nCommand:\n%v\nError: %v\nOutput: %v\n", time.Now(), name.(string), command.(string), err, out))
-			if shouldFail.(bool) {
-				return err
+		for attempt <= retries.(int) {
+			cmd = exec.Command("sh", "-c", command.(string))
+			err = cmd.Run()
+
+			if err != nil {
+				out, _ := cmd.Output()
+				writeErr(fmt.Sprintf("Timestamp: %v\nAttempt: %v\nHook: %v\nCommand:\n%v\nError: %v\nOutput: %v\n", time.Now(), attempt, name.(string), command.(string), err, out))
 			}
+			attempt += 1
+			time.Sleep(time.Duration(period.(int)) * time.Second)
+		}
+
+		// Deliberately will NOT fail unless specified.
+		if err != nil && shouldFail.(bool) {
+			return err
 		}
 	}
 
